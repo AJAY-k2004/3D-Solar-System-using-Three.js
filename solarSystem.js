@@ -28,7 +28,7 @@ const sun = new THREE.Mesh(
 );
 scene.add(sun);
 
-// Orbit path drawer
+// Draw circular orbit
 function drawOrbit(radius) {
   const points = [];
   for (let i = 0; i <= 100; i++) {
@@ -40,7 +40,7 @@ function drawOrbit(radius) {
   scene.add(line);
 }
 
-// Create planet
+// Create each planet
 function createPlanet(name, size, texturePath, distance, spinSpeed, orbitSpeed) {
   const texture = new THREE.TextureLoader().load(texturePath);
   const mesh = new THREE.Mesh(
@@ -108,7 +108,7 @@ toggleBtn.addEventListener("click", () => {
   controlsDiv.style.display = controlsDiv.style.display === "block" ? "none" : "block";
 });
 
-// Hover detection using raycasting
+// Hover detection using raycaster
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let hoveredPlanet = null;
@@ -118,27 +118,31 @@ window.addEventListener("mousemove", (event) => {
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 });
 
+// Animate
 function animate() {
   requestAnimationFrame(animate);
   if (!paused) {
     const delta = clock.getDelta();
 
-    // Update orbit and spin
+    // Orbit and spin
     planets.forEach(planet => {
       planet.container.rotation.y += planet.orbitSpeed;
       planet.mesh.rotation.y += planet.spinSpeed;
     });
 
-    // Hover label logic
+    // Raycast hover
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
     hoveredPlanet = intersects.length ? planets.find(p => p.mesh === intersects[0].object) : null;
 
+    // Label display
     planets.forEach(planet => {
       if (hoveredPlanet === planet) {
-        const pos = planet.mesh.position.clone().project(camera);
-        planet.label.style.left = `${(pos.x * 0.5 + 0.5) * window.innerWidth}px`;
-        planet.label.style.top = `${(-pos.y * 0.5 + 0.5) * window.innerHeight}px`;
+        const worldPos = new THREE.Vector3();
+        planet.mesh.getWorldPosition(worldPos);
+        const screenPos = worldPos.clone().project(camera);
+        planet.label.style.left = `${(screenPos.x * 0.5 + 0.5) * window.innerWidth}px`;
+        planet.label.style.top = `${(-screenPos.y * 0.5 + 0.5) * window.innerHeight}px`;
         planet.label.style.display = "block";
       } else {
         planet.label.style.display = "none";
