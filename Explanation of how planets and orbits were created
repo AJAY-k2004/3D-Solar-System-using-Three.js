@@ -1,0 +1,25 @@
+🌍 Explanation: How Planets and Orbits Were Created
+
+1. Used Three.js for 3D Modeling
+   - The entire solar system was built using the Three.js library, which simplifies 3D object creation and animation in the browser.
+
+2. Created the Planets as 3D Spheres
+   - Each planet (Mercury to Neptune) was created using SphereGeometry, which forms a round 3D object.
+   - Realistic textures (images of actual planets) were applied to each sphere for visual accuracy.
+
+3. Positioned Planets Around the Sun
+   - Planets were placed at different distances from the Sun using .position.set(x, y, z) to represent their orbits.
+
+4. Used Orbit Containers for Circular Movement
+   - Each planet was placed inside a parent Object3D container.
+   - This container rotates around the Sun, making the planet appear to orbit it naturally.
+
+5. Simulated Planetary Spin (Self-Rotation)
+   - The planet meshes themselves rotate on their own Y-axis to mimic each planet’s spinning motion.
+
+6. Drew Orbit Paths Using Line Loops
+   - Circular orbit paths were visualized using 100+ points around the Sun.
+   - These points were connected using THREE.LineLoop to form a ring showing the planet's path.
+
+7. Animated Using requestAnimationFrame and THREE.Clock
+   - Continuous animation was achieved using a render loop that updates the orbit and rotation speeds based on time.
