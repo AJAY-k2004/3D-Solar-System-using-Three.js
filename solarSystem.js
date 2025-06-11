@@ -1,13 +1,13 @@
 import * as THREE from "https://unpkg.com/three@0.127.0/build/three.module.js";
 import { OrbitControls } from "https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js";
 
-// Setup
+// Scene setup
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(-50, 80, 180);
 const controls = new OrbitControls(camera, renderer.domElement);
 const clock = new THREE.Clock();
@@ -22,14 +22,17 @@ scene.background = new THREE.CubeTextureLoader().load([stars, stars, stars, star
 
 // Sun
 const sunTex = new THREE.TextureLoader().load('./image/sun.jpg');
-const sun = new THREE.Mesh(new THREE.SphereGeometry(15, 50, 50), new THREE.MeshBasicMaterial({ map: sunTex }));
+const sun = new THREE.Mesh(
+  new THREE.SphereGeometry(15, 50, 50),
+  new THREE.MeshBasicMaterial({ map: sunTex })
+);
 scene.add(sun);
 
-// Draw orbit
+// Orbit path drawer
 function drawOrbit(radius) {
   const points = [];
   for (let i = 0; i <= 100; i++) {
-    const angle = (i / 100) * Math.PI * 2;
+    const angle = (i / 100) * 2 * Math.PI;
     points.push(radius * Math.cos(angle), 0, radius * Math.sin(angle));
   }
   const geometry = new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(points, 3));
@@ -40,7 +43,10 @@ function drawOrbit(radius) {
 // Create planet
 function createPlanet(name, size, texturePath, distance, spinSpeed, orbitSpeed) {
   const texture = new THREE.TextureLoader().load(texturePath);
-  const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), new THREE.MeshStandardMaterial({ map: texture }));
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(size, 32, 32),
+    new THREE.MeshStandardMaterial({ map: texture })
+  );
   const container = new THREE.Object3D();
   mesh.position.set(distance, 0, 0);
   container.add(mesh);
@@ -50,11 +56,20 @@ function createPlanet(name, size, texturePath, distance, spinSpeed, orbitSpeed) 
   const label = document.createElement("div");
   label.className = "planet-label";
   label.textContent = name;
+  label.style.position = "absolute";
+  label.style.color = "white";
+  label.style.background = "rgba(0,0,0,0.7)";
+  label.style.padding = "2px 6px";
+  label.style.borderRadius = "4px";
+  label.style.fontSize = "14px";
+  label.style.pointerEvents = "none";
+  label.style.display = "none";
   document.body.appendChild(label);
 
   return { name, mesh, container, spinSpeed, orbitSpeed, label };
 }
 
+// Planet data
 const planetData = [
   ["Mercury", 3, "./image/mercury.jpg", 28, 0.004, 0.01],
   ["Venus", 5, "./image/venus.jpg", 44, 0.002, 0.008],
@@ -68,7 +83,7 @@ const planetData = [
 
 const planets = planetData.map(p => createPlanet(...p));
 
-// Sliders
+// Planet speed sliders
 const controlsPanel = document.getElementById("planetControls");
 planets.forEach((planet, index) => {
   const label = document.createElement("label");
@@ -79,58 +94,65 @@ planets.forEach((planet, index) => {
   });
 });
 
-// Pause button
+// Pause/resume
 let paused = false;
 document.getElementById("pauseBtn").addEventListener("click", () => {
   paused = !paused;
   document.getElementById("pauseBtn").textContent = paused ? "Resume" : "Pause";
 });
 
-// Toggle control panel
+// Toggle controls (for mobile)
 const toggleBtn = document.getElementById("toggleControls");
 const controlsDiv = document.getElementById("controls");
 toggleBtn.addEventListener("click", () => {
   controlsDiv.style.display = controlsDiv.style.display === "block" ? "none" : "block";
 });
 
-// Tap to show label
+// Hover detection using raycasting
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-let tappedPlanet = null;
+let hoveredPlanet = null;
 
-window.addEventListener("pointerdown", (event) => {
+window.addEventListener("mousemove", (event) => {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
-  tappedPlanet = intersects.length ? planets.find(p => p.mesh === intersects[0].object) : null;
 });
 
-// Animate
 function animate() {
   requestAnimationFrame(animate);
   if (!paused) {
     const delta = clock.getDelta();
+
+    // Update orbit and spin
     planets.forEach(planet => {
       planet.container.rotation.y += planet.orbitSpeed;
       planet.mesh.rotation.y += planet.spinSpeed;
+    });
 
-      if (tappedPlanet === planet) {
-        const screenPos = planet.mesh.position.clone().project(camera);
-        planet.label.style.left = `${(screenPos.x * 0.5 + 0.5) * window.innerWidth}px`;
-        planet.label.style.top = `${(-screenPos.y * 0.5 + 0.5) * window.innerHeight}px`;
+    // Hover label logic
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(planets.map(p => p.mesh));
+    hoveredPlanet = intersects.length ? planets.find(p => p.mesh === intersects[0].object) : null;
+
+    planets.forEach(planet => {
+      if (hoveredPlanet === planet) {
+        const pos = planet.mesh.position.clone().project(camera);
+        planet.label.style.left = `${(pos.x * 0.5 + 0.5) * window.innerWidth}px`;
+        planet.label.style.top = `${(-pos.y * 0.5 + 0.5) * window.innerHeight}px`;
         planet.label.style.display = "block";
       } else {
         planet.label.style.display = "none";
       }
     });
   }
+
   renderer.render(scene, camera);
 }
 animate();
 
+// Handle window resize
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
